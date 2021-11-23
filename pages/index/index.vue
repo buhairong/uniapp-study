@@ -4,19 +4,9 @@
 		<view class="header-box">
 			<!-- 顶部广告位轮播图 -->
 			<swiper class="swiper" :indicator-dots="false" :autoplay="true" :interval="2500" :duration="500">
-				<swiper-item>
-					<navigator open-type="navigate" :url=" '/pages/webview/webview?url='+encodeURI('http://baidu.com')">
-						<image class="banner-swiper-img" src="http://ns-strategy.cdn.bcdbos.com/ns-strategy/upload/fc_big_pic/part-00140-2668.jpg" mode="aspectFill" />
-					</navigator>
-				</swiper-item>
-				<swiper-item>
-					<navigator open-type="navigate" :url=" '/pages/webview/webview?url='+encodeURI('http://baidu.com')">
-						<image class="banner-swiper-img" src="http://ns-strategy.cdn.bcdbos.com/ns-strategy/upload/fc_big_pic/part-00140-2668.jpg" mode="aspectFill" />
-					</navigator>
-				</swiper-item>
-				<swiper-item>
-					<navigator open-type="navigate" :url=" '/pages/webview/webview?url='+encodeURI('http://baidu.com')">
-						<image class="banner-swiper-img" src="http://ns-strategy.cdn.bcdbos.com/ns-strategy/upload/fc_big_pic/part-00140-2668.jpg" mode="aspectFill" />
+				<swiper-item v-for="(item, index) in swiperAdlist" :key="index">
+					<navigator open-type="navigate" :url=" '/pages/webview/webview?url='+encodeURI(item.data.link)">
+						<image class="banner-swiper-img" :src="item.data.image" mode="aspectFill" />
 					</navigator>
 				</swiper-item>
 			</swiper>
@@ -50,13 +40,17 @@
 	export default {
 		data() {
 			return {
-				title: 'Hello'
+				swiperAdlist: [], // 轮播图
 			}
 		},
 		onLoad() {
-
+			this.getAdvert()
 		},
 		methods: {
+			async getAdvert() {
+				this.swiperAdlist = await this.$u.api.getAdvert()
+			},
+			
 			gotoFeeds(url) {
 				uni.switchTab({
 					url
