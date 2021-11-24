@@ -29,10 +29,58 @@
 			</view>
 			<!-- Tab 选项卡 -->
 			<view class="tabs-box">
-		 		<view class="one-nav">推荐</view>
-		 		<view class="one-nav">资讯</view>
+		 		<view class="one-nav" :class="{'nav-actived': currentSwiperIndex === 0}" @tap="swiperChange(0)">推荐</view>
+		 		<view class="one-nav" :class="{'nav-actived': currentSwiperIndex === 1}" @tap="swiperChange(1)">资讯</view>
 		 	</view>
 		</view>
+		<!-- 内容轮播导航实现 -->
+		<swiper class="swiper-box" style="height:1000upx" :current="0">
+			<!-- 推荐动态实现 -->
+			<swiper-item class="swiper-item sns-now">
+				<view class="feeds-box">
+					<view class="feed-one" v-for="(item, index) in feedslist" :key="index">
+						<navigator open-type="navigate" :url=" '/subpages/feedinfo/feedinfo?id=' + item.id">
+							<image class="feed-img" :src="item.cover" mode="widthFix" :lazy-load="true" />
+							<view class="u-line-2 feed-title" v-if="!!item.feed_content">{{ item.feed_content }}</view>
+							<view class="feed-info">
+								<view class="iview">
+									<image class="avatar" :src=" item.avatar" />
+									<text class="name u-line-1">{{ item.name }}</text>
+								</view>
+								<view class="iview">
+									<view class="ilike" @tap.stop="clickLove(item)">
+										<image v-if="item.has_like" src="@/static/lover.png" class="micon" />
+										<image v-else src="@/static/love.png" class="micon" />
+										<text class="love-count" v-if="item.like_count>0">{{ item.like_count }}</text>
+									</view>
+								</view>
+							</view>
+						</navigator>
+					</view>
+				</view>
+			</swiper-item>
+			<!-- 资讯列表实现 -->
+			<swiper-item class="swiper-item sns-news">
+				<view v-for="(item, index) in newsList" :key="index">
+					<navigator class="one-new" open-type="navigate" :url=" '/subpages/newinfo/newinfo?id=' + item.id">
+						<view class="left">
+							<view class="title u-line-2">{{item.title}}</view>
+							<view class="uinfo">
+								<view class="iview">
+									<view class="utime">
+										<text class="name">{{ item.author }}</text>
+									</view>
+								</view>
+								<text class="uptime">{{ item.created_at | timeFormate }}发布</text>
+							</view>
+						</view>
+						<view class="right">
+							<image class="pic" mode="aspectFill" :src="item.cover" />
+						</view>
+					</navigator>
+				</view>
+			</swiper-item>
+		</swiper>
 	</view>
 </template>
 
@@ -41,16 +89,47 @@
 		data() {
 			return {
 				swiperAdlist: [], // 轮播图
+				feedslist: [], // 动态
+				newslist: [], // 资讯
+				currentSwiperIndex: 0,
 			}
 		},
 		onLoad() {
 			this.getAdvert()
+			this.getFeeds()
+			this.getNews()
 		},
 		methods: {
 			async getAdvert() {
 				this.swiperAdlist = await this.$u.api.getAdvert({
 					space: '1,2,3'
 				})
+			},
+			
+			async getFeeds() {
+				const feeds = await this.$u.api.getFeeds()
+				this.feedslist = feeds.feeds.map(item => {
+					return {
+						...item,
+						cover: this.BaseFileURL + item.images[0].file,
+						avatar: !!item.user.avatar ? item.user.avatar.url : '/static/nopic.png',
+						name: item.user.name,
+					}
+				})
+			},
+			
+			async getNews() {
+				const news = await this.$u.api.getNews()
+				this.newsList = news.map(item => {
+					return {
+						...item,
+						cover: this.BaseFileURL + item.image.id
+					}
+				})
+			},
+			
+			swiperChange(index) {
+				this.currentSwiperIndex = index
 			},
 			
 			gotoFeeds(url) {
@@ -177,6 +256,176 @@
 
 				&.nav-actived {
 					color: #0050FF;
+				}
+			}
+		}
+	}
+	
+	// 此刻 栏目样式\
+	.swiper-box {
+		background-color: #f1f1f1;
+		padding: 60upx 0 40upx;
+	}
+	
+	.sns-now {
+	
+		// 动态相关瀑布流样式
+		.feeds-box {
+			width: 735upx;
+			margin-left: 13upx;
+			padding-bottom: 20upx;
+	
+			.feed-one {
+				width: 358upx;
+				margin-bottom: 12upx;
+				background-color: #FFF;
+				border-radius: 20upx;
+	
+				position: relative;
+	
+				.feed-img {
+					width: 358upx;
+					height: 300upx;
+					border-radius: 10upx;
+				}
+	
+				.feed-title {
+					width: 350upx;
+					margin-top: 15upx;
+					margin-left: 10upx;
+					font-size: 28upx;
+					line-height: 40upx;
+					color: #001432;
+					text-align: left;
+				}
+	
+				.feed-info {
+					display: flex;
+					flex-direction: row;
+					flex-wrap: nowrap;
+					justify-content: space-between;
+					align-items: center;
+					align-content: center;
+					margin-top: 10upx;
+					font-size: 20upx;
+					color: #666;
+					padding: 0 10upx 16upx;
+	
+					.iview {
+						display: flex;
+						flex-direction: row;
+						flex-wrap: nowrap;
+						justify-content: space-between;
+						align-items: center;
+						align-content: center;
+	
+						.ilike {
+							display: flex;
+							flex-direction: row;
+							flex-wrap: nowrap;
+							justify-content: space-between;
+							align-items: center;
+							align-content: center;
+							height: 60upx;
+							padding: 0 10upx;
+							background-color: #FFFFFF;
+						}
+					}
+	
+					.avatar {
+						margin-right: 10upx;
+						height: 40upx;
+						width: 40upx;
+						border-radius: 50%;
+						border: 1upx solid #eee;
+					}
+	
+					.name {
+						max-width: 120upx;
+						color: #757474;
+					}
+	
+					.micon {
+						width: 32upx;
+						height: 28upx;
+					}
+	
+					.love-count {
+						padding-left: 10upx;
+						color: #757474;
+					}
+				}
+			}
+		}
+	}
+	
+	// 轮播页面 资讯
+	.sns-news {
+		background-color: #fff;
+		width: 750upx;
+	
+		.one-new {
+			width: 700upx;
+			height: 74px;
+			display: flex;
+			flex-direction: row;
+			flex-wrap: wrap;
+			justify-content: space-around;
+			align-items: flex-start;
+			align-content: center;
+			padding-bottom: 10px;
+			padding-top: 10px;
+			padding-left: 25upx;
+			padding-right: 25upx;
+			border-bottom: 1px solid #f1f1f1;
+	
+			.left {
+				width: 490upx;
+				height: 140upx;
+				text-align: left;
+				display: flex;
+				flex-direction: column;
+				justify-content: space-between;
+				align-items: flex-start;
+	
+				.title {
+					font-size: 30upx;
+					line-height: 42upx;
+					color: #001432;
+					margin-top: 21upx;
+				}
+	
+				.uinfo {
+					width: 490upx;
+					display: flex;
+					flex-direction: row;
+					flex-wrap: nowrap;
+					justify-content: space-between;
+					align-items: center;
+					align-content: center;
+					margin-top: 6upx;
+					font-size: 20upx;
+					color: #999;
+	
+					.utime {
+						font-size: 24upx;
+	
+						.name {
+							max-width: 120upx;
+							color: #777;
+						}
+					}
+				}
+			}
+	
+			.right {
+				width: 120upx;
+	
+				.pic {
+					width: 120upx;
+					height: 120upx;
+					margin-top: 20upx;
+					border-radius: 6upx;
 				}
 			}
 		}

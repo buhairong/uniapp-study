@@ -7,6 +7,8 @@ import httpApi from '@/common/http.api.js'
 
 Vue.use(uView)
 
+Vue.prototype.BaseFileURL = 'http://ts.lagou.uieee.com/api/v2/files/'
+
 // #ifndef VUE3
 import Vue from 'vue'
 Vue.config.productionTip = false
