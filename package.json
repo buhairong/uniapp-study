@@ -10,6 +10,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "uview-ui": "^2.0.3"
+    "uview-ui": "^1.8.1"
   }
 }

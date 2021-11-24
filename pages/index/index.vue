@@ -48,7 +48,9 @@
 		},
 		methods: {
 			async getAdvert() {
-				this.swiperAdlist = await this.$u.api.getAdvert()
+				this.swiperAdlist = await this.$u.api.getAdvert({
+					space: '1,2,3'
+				})
 			},
 			
 			gotoFeeds(url) {
