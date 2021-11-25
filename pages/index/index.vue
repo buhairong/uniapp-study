@@ -34,28 +34,55 @@
 		 	</view>
 		</view>
 		<!-- 内容轮播导航实现 -->
-		<swiper class="swiper-box" style="height:1000upx" :current="0">
+		<swiper class="swiper-box" :style=" 'height:'+ swiperSliderHeight " :current="0">
 			<!-- 推荐动态实现 -->
-			<swiper-item class="swiper-item sns-now">
-				<view class="feeds-box">
-					<view class="feed-one" v-for="(item, index) in feedslist" :key="index">
-						<navigator open-type="navigate" :url=" '/subpages/feedinfo/feedinfo?id=' + item.id">
-							<image class="feed-img" :src="item.cover" mode="widthFix" :lazy-load="true" />
-							<view class="u-line-2 feed-title" v-if="!!item.feed_content">{{ item.feed_content }}</view>
-							<view class="feed-info">
-								<view class="iview">
-									<image class="avatar" :src=" item.avatar" />
-									<text class="name u-line-1">{{ item.name }}</text>
+			<swiper-item class="swiper-item">
+				<view class="page-item sns-now">
+					<view class="feeds-box">
+						<waterfall-sns v-model="feedsList" ref="waterfall">
+							<template v-slot:left="{leftList}">
+								<view class="feed-one" v-for="(item, index) in leftList" :key="index">
+									<navigator open-type="navigate" :url=" '/subpages/feedinfo/feedinfo?id=' + item.id">
+										<image class="feed-img" :src="item.cover" mode="widthFix" :lazy-load="true" />
+										<view class="u-line-2 feed-title" v-if="!!item.feed_content">{{ item.feed_content }}</view>
+										<view class="feed-info">
+											<view class="iview">
+												<image class="avatar" :src=" item.avatar" />
+												<text class="name u-line-1">{{ item.name }}</text>
+											</view>
+											<view class="iview">
+												<view class="ilike" @tap.stop="clickLove(item)">
+													<image v-if="item.has_like" src="@/static/lover.png" class="micon" />
+													<image v-else src="@/static/love.png" class="micon" />
+													<text class="love-count" v-if="item.like_count>0">{{ item.like_count }}</text>
+												</view>
+											</view>
+										</view>
+									</navigator>
 								</view>
-								<view class="iview">
-									<view class="ilike" @tap.stop="clickLove(item)">
-										<image v-if="item.has_like" src="@/static/lover.png" class="micon" />
-										<image v-else src="@/static/love.png" class="micon" />
-										<text class="love-count" v-if="item.like_count>0">{{ item.like_count }}</text>
-									</view>
+							</template>
+							<template v-slot:right="{rightList}">
+								<view class="feed-one" v-for="(item, index) in rightList" :key="index">
+									<navigator open-type="navigate" :url=" '/subpages/feedinfo/feedinfo?id=' + item.id">
+										<image class="feed-img" :src="item.cover" mode="widthFix" :lazy-load="true" />
+										<view class="u-line-2 feed-title" v-if="!!item.feed_content">{{ item.feed_content }}</view>
+										<view class="feed-info">
+											<view class="iview">
+												<image class="avatar" :src=" item.avatar" />
+												<text class="name u-line-1">{{ item.name }}</text>
+											</view>
+											<view class="iview">
+												<view class="ilike" @tap.stop="clickLove(item)">
+													<image v-if="item.has_like" src="@/static/lover.png" class="micon" />
+													<image v-else src="@/static/love.png" class="micon" />
+													<text class="love-count" v-if="item.like_count>0">{{ item.like_count }}</text>
+												</view>
+											</view>
+										</view>
+									</navigator>
 								</view>
-							</view>
-						</navigator>
+							</template>
+						</waterfall-sns>
 					</view>
 				</view>
 			</swiper-item>
@@ -71,7 +98,7 @@
 										<text class="name">{{ item.author }}</text>
 									</view>
 								</view>
-								<text class="uptime">{{ item.created_at | timeFormate }}发布</text>
+								<text class="uptime">{{ item.created_at }}发布</text>
 							</view>
 						</view>
 						<view class="right">
@@ -85,14 +112,22 @@
 </template>
 
 <script>
+	import WaterfallSns from '@/components/waterfall-sns/index.vue'
+	
 	export default {
 		data() {
 			return {
 				swiperAdlist: [], // 轮播图
-				feedslist: [], // 动态
-				newslist: [], // 资讯
+				feedsList: [], // 动态
+				newsList: [], // 资讯
 				currentSwiperIndex: 0,
+				swiperSliderHeight: '1000px',
+				swiperSliderFeedsHeight: 0,
+				swiperSliderNewsHeight: 0,
 			}
+		},
+		components: {
+			WaterfallSns
 		},
 		onLoad() {
 			this.getAdvert()
@@ -108,13 +143,18 @@
 			
 			async getFeeds() {
 				const feeds = await this.$u.api.getFeeds()
-				this.feedslist = feeds.feeds.map(item => {
+				this.feedsList = feeds.feeds.map(item => {
 					return {
 						...item,
 						cover: this.BaseFileURL + item.images[0].file,
 						avatar: !!item.user.avatar ? item.user.avatar.url : '/static/nopic.png',
 						name: item.user.name,
 					}
+				})
+				uni.$once("swiperHeightChange", height => {
+					console.log('计算出来的高度为:'+ height)
+					this.swiperSliderFeedsHeight = height
+					this.swiperSliderHeight = height
 				})
 			},
 			
@@ -142,13 +182,37 @@
 </script>
 
 <style lang="scss" scoped>
+	#sns {
+		background-color: #f1f1f1;
+	}
+	
+	// 推荐、咨询 按钮样式
+	.tabs-box {
+		display: flex;
+		flex-direction: row;
+		justify-content: center;
+		width: 750upx;
+	
+		.one-nav {
+			width: 120upx;
+			color: #9B9B9B;
+			font-size: 36upx;
+			text-align: center;
+			font-weight: blod;
+	
+			&.nav-actived {
+				color: #0050FF;
+			}
+		}
+	}
+	
 	.header-box {
 		position: relative;
 		left: 0;
 		height: 500upx;
 		background-color: #f1f1f1;
 		z-index: 1;
-
+	
 		// 广告位轮播器相关样式
 		.swiper {
 			width: 750upx;
@@ -158,14 +222,14 @@
 			top: 0;
 			text-align: center;
 			z-index: 1;
-
+	
 			.banner-swiper-img {
 				width: 750upx;
 				height: 400upx;
 				box-shadow: 0 0 2px 0 rgb(188, 188, 188);
 			}
 		}
-
+	
 		.crile {
 			width: 750upx;
 			height: 50upx;
@@ -174,7 +238,7 @@
 			top: 355upx;
 			z-index: 9;
 		}
-
+	
 		// 新鲜事 活动墙 按钮样式
 		.card-header {
 			position: absolute;
@@ -190,7 +254,7 @@
 			justify-content: space-between;
 			align-items: center;
 			align-content: center;
-
+	
 			.card-one {
 				width: 328upx;
 				height: 96upx;
@@ -204,23 +268,23 @@
 				justify-content: flex-start;
 				align-items: center;
 				align-content: center;
-
+	
 				.img {
 					width: 44upx;
 					height: 44upx;
 					margin-left: 50upx;
 				}
-
+	
 				.iright {
 					margin-left: 30upx;
 					text-align: left;
 					color: #888;
-
+	
 					.title {
 						font-size: 30upx;
 						color: #001432;
 					}
-
+	
 					.iview {
 						display: flex;
 						flex-direction: row;
@@ -234,7 +298,7 @@
 				}
 			}
 		}
-
+	
 		// 推荐、咨询 按钮样式
 		.tabs-box {
 			width: 750upx;
@@ -245,7 +309,7 @@
 			display: flex;
 			flex-direction: row;
 			justify-content: center;
-
+	
 			.one-nav {
 				height: 80upx;
 				width: 110upx;
@@ -253,7 +317,7 @@
 				font-size: 36upx;
 				text-align: center;
 				font-weight: blod;
-
+	
 				&.nav-actived {
 					color: #0050FF;
 				}
