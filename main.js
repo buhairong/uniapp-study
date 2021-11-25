@@ -7,6 +7,10 @@ import httpApi from '@/common/http.api.js'
 
 Vue.use(uView)
 
+// 引入公用的组件 uni-nav-bar
+import uniNavBar from "@/components/uni-nav-bar/index.vue"
+Vue.component("uni-nav-bar", uniNavBar);
+
 Vue.prototype.BaseFileURL = 'http://ts.lagou.uieee.com/api/v2/files/'
 
 // #ifndef VUE3

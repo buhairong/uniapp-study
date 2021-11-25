@@ -1,5 +1,12 @@
 <template>
 	<view id="index">
+		<!-- 顶部导航 -->
+		<uni-nav-bar v-if="navBarShowTag">
+			<view class="tabs-box">
+				<view class="one-nav" :class="currentSwiperIndex === 0 ? 'nav-actived' : '' " @tap="swiperChange(0)">推荐</view>
+				<view class="one-nav" :class="currentSwiperIndex === 1 ? 'nav-actived' : '' " @tap="swiperChange(1)">资讯</view>
+			</view>
+		</uni-nav-bar>
 		<!-- 页面 header 相关部分 -->
 		<view class="header-box">
 			<!-- 顶部广告位轮播图 -->
@@ -34,7 +41,7 @@
 		 	</view>
 		</view>
 		<!-- 内容轮播导航实现 -->
-		<swiper class="swiper-box" :style=" 'height:'+ swiperSliderHeight " :current="0">
+		<swiper class="swiper-box" :style=" 'height:'+ swiperSliderHeight " :current="currentSwiperIndex" @animationfinish="swiperSlider">
 			<!-- 推荐动态实现 -->
 			<swiper-item class="swiper-item">
 				<view class="page-item sns-now">
@@ -117,6 +124,8 @@
 	export default {
 		data() {
 			return {
+				// navBar 显示状态控制
+				navBarShowTag: false,
 				swiperAdlist: [], // 轮播图
 				feedsList: [], // 动态
 				newsList: [], // 资讯
@@ -124,15 +133,50 @@
 				swiperSliderHeight: '1000px',
 				swiperSliderFeedsHeight: 0,
 				swiperSliderNewsHeight: 0,
+				// 记录滚动所在的位置
+				oldFeedsScrollTop: 0,
+				oldNewsScrollTop: 0,
 			}
 		},
 		components: {
-			WaterfallSns
+			WaterfallSns,
 		},
 		onLoad() {
 			this.getAdvert()
 			this.getFeeds()
 			this.getNews()
+		},
+		onPageScroll(event) {
+			if (this.currentSwiperIndex === 0) {
+				this.oldFeedsScrollTop = event.scrollTop
+			} else {
+				this.oldNewsScrollTop = event.scrollTop
+			}
+			if (event.scrollTop > 220) {
+				this.navBarShowTag = true
+			} else {
+				this.navBarShowTag = false
+			}
+		},
+		onReachBottom() {
+			console.log('下拉到底啦')
+			// 请求新的数据
+			if (this.currentSwiperIndex === 0) {
+				this.getFeeds()
+			} else {
+				this.getNews()
+			}
+		},
+		onPullDownRefresh() {
+			console.log('顶部下拉刷新')
+			this.getAdvert()
+			this.feedsList = []
+			this.$refs.waterfall.clear()
+			if (this.currentSwiperIndex === 0) {
+				this.getFeeds()
+			} else {
+				this.getNews()
+			}
 		},
 		methods: {
 			async getAdvert() {
@@ -143,7 +187,7 @@
 			
 			async getFeeds() {
 				const feeds = await this.$u.api.getFeeds()
-				this.feedsList = feeds.feeds.map(item => {
+				const feedsList = feeds.feeds.map(item => {
 					return {
 						...item,
 						cover: this.BaseFileURL + item.images[0].file,
@@ -151,6 +195,7 @@
 						name: item.user.name,
 					}
 				})
+				this.feedsList = [...this.feedsList, ...feedsList]
 				uni.$once("swiperHeightChange", height => {
 					console.log('计算出来的高度为:'+ height)
 					this.swiperSliderFeedsHeight = height
@@ -160,16 +205,50 @@
 			
 			async getNews() {
 				const news = await this.$u.api.getNews()
-				this.newsList = news.map(item => {
+				const newsList = news.map(item => {
 					return {
 						...item,
 						cover: this.BaseFileURL + item.image.id
 					}
 				})
+				this.newsList = [...this.newsList, ...newsList]
+				this.swiperSliderNewsHeight = this.newsList.length * 95 + 100 + 'px'
+				this.swiperSliderHeight = this.swiperSliderNewsHeight
 			},
 			
 			swiperChange(index) {
+				if (index === 0) {
+					this.swiperSliderHeight = this.swiperSliderFeedsHeight
+					uni.pageScrollTo({
+						duration: 0, //过渡时间必须为0，uniapp bug，否则运行到手机会报错
+						scrollTop: this.oldFeedsScrollTop, //滚动到目标位置
+					})
+				} else {
+					this.swiperSliderHeight = this.swiperSliderNewsHeight
+					uni.pageScrollTo({
+						duration: 0, //过渡时间必须为0，uniapp bug，否则运行到手机会报错
+						scrollTop: this.oldNewsScrollTop, //滚动到目标位置
+					})
+				}
 				this.currentSwiperIndex = index
+			},
+			
+			// 页面滑动左右分页的时候实现的效果
+			swiperSlider(event) {
+				if (event.detail.current === 0) {
+					this.swiperSliderHeight = this.swiperSliderFeedsHeight
+					uni.pageScrollTo({
+						duration: 0, //过渡时间必须为0，uniapp bug，否则运行到手机会报错
+						scrollTop: this.oldFeedsScrollTop, //滚动到目标位置
+					})
+				} else {
+					this.swiperSliderHeight = this.swiperSliderNewsHeight
+					uni.pageScrollTo({
+						duration: 0, //过渡时间必须为0，uniapp bug，否则运行到手机会报错
+						scrollTop: this.oldNewsScrollTop, //滚动到目标位置
+					})
+				}
+				this.currentSwiperIndex = event.detail.current
 			},
 			
 			gotoFeeds(url) {
